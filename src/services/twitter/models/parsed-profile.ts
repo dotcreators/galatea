@@ -1,4 +1,4 @@
-export interface ParsedProfile {
+export type ParsedProfile = {
   userId: string;
   username: string;
   tweetsCount: number;
@@ -10,4 +10,4 @@ export interface ParsedProfile {
   bannerUrl?: string;
   website?: string;
   biography?: string;
-}
+};

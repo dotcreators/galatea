@@ -5,28 +5,28 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev:prisma-create": "bunx prisma init",
-    "dev:prisma": "bunx prisma db pull && bunx prisma generate"
+    "start": "bun run src/index.ts",
+    "build:drizzle-schema": "bunx drizzle-kit generate && bunx drizzle-kit push"
   },
   "author": "anivire",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^5.14.0",
-    "@the-convocation/twitter-scraper": "^0.12.0",
-    "@types/node": "^20.13.0",
-    "@types/node-cron": "^3.0.11",
+    "@the-convocation/twitter-scraper": "^0.15.1",
     "axios": "^1.7.2",
     "discord-ts-webhook": "^1.2.1",
     "discord-webhook-node": "^1.1.8",
-    "install": "^0.13.0",
+    "drizzle-orm": "^0.40.0",
     "node-cron": "^3.0.3",
-    "prisma": "^5.14.0",
-    "ts-node": "^10.9.2",
-    "twitter-openapi-typescript": "^0.0.34",
+    "pg": "^8.13.3",
+    "prettier": "^3.5.2",
+    "twitter-openapi-typescript": "0.0.45",
     "typescript": "^5.4.5"
   },
   "devDependencies": {
-    "eslint": "^9.4.0"
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.11.11",
+    "bun-types": "^1.2.4",
+    "drizzle-kit": "^0.30.5",
+    "eslint": "^9.21.0"
   }
 }

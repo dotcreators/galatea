@@ -1,62 +1,19 @@
-import { Profile, Scraper } from '@the-convocation/twitter-scraper';
-import { formatBio, getOriginalUrl } from '../utils';
-import { sendDiscordMessage } from './webhookService';
 import { TwitterOpenApi } from 'twitter-openapi-typescript';
-import { ParsedProfile } from '../models/ParsedProfile';
+import { ITwitterClient } from '../twitter-client.interface';
+import { ParsedProfile } from '../models/parsed-profile';
+import { formatBio } from '../../../utils';
 
-export class TwitterService {
-  private readonly scraper = new Scraper();
+export default class TwitterClient implements ITwitterClient {
   private readonly api = new TwitterOpenApi();
 
-  async getTwitterProfileLegacy(
-    username: string
-  ): Promise<Profile | undefined> {
-    try {
-      let profile = await this.scraper.getProfile(username);
-
-      if (profile.biography) {
-        const regex =
-          /https?:\/\/(?:www\.|(?!www))[^\s.]+(?:\.[^\s.]+)+(?:\w\/?)*/gi;
-
-        const matches = profile.biography.match(regex);
-
-        if (matches) {
-          const promises = matches.map(async link => {
-            const originalUrl = await getOriginalUrl(link);
-            return originalUrl || '';
-          });
-
-          const newBioArray = await Promise.all(promises);
-
-          let index = 0;
-          const processedBio = profile.biography.replace(
-            regex,
-            () => newBioArray[index++] || ''
-          );
-
-          profile.biography = processedBio;
-        }
-      }
-
-      return profile;
-    } catch (e) {
-      console.log(e);
-
-      if (e instanceof Error) {
-        sendDiscordMessage(
-          e.name,
-          `${e.message}\n\n\`username: ${username}\``,
-          'error'
-        );
-      } else {
-        sendDiscordMessage('UnknownError', `${e}`, 'error');
-      }
-      return undefined;
-    }
+  private async getClient() {
+    return await this.api.getGuestClient();
   }
 
-  async getTwitterProfileByUsername(username: string) {
-    const twitterClient = await this.api.getGuestClient();
+  async getTwitterUserByUsername(
+    username: string
+  ): Promise<ParsedProfile | { error: string }> {
+    const twitterClient = await this.getClient();
     const r = await twitterClient
       .getUserApi()
       .getUserByScreenName({ screenName: username });
@@ -82,11 +39,15 @@ export class TwitterService {
       };
 
       return profile;
+    } else {
+      return { error: 'Unable to find requested user' };
     }
   }
 
-  async getTwitterProfileById(userId: string) {
-    const twitterClient = await this.api.getGuestClient();
+  async getTwitterUserByUserId(
+    userId: string
+  ): Promise<ParsedProfile | { error: string }> {
+    const twitterClient = await this.getClient();
     const r = await twitterClient
       .getUserApi()
       .getUserByRestId({ userId: userId });
@@ -112,6 +73,8 @@ export class TwitterService {
       };
 
       return profile;
+    } else {
+      return { error: 'Unable to find requested user' };
     }
   }
 }

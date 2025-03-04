@@ -13,13 +13,13 @@ export function sendDiscordMessage(
   if (severity === 'error') {
     embed = new MessageBuilder()
       .setColor('#FA4545')
-      .setTitle(`galatea-${title.toLocaleLowerCase()}`)
+      .setTitle(`galatea - ${title.toLocaleLowerCase()}`)
       .setDescription(message)
       .setTimestamp();
   } else if (severity === 'info') {
     embed = new MessageBuilder()
       .setColor('#FF902B')
-      .setTitle(`galatea-${title.toLocaleLowerCase()}`)
+      .setTitle(`galatea - ${title.toLocaleLowerCase()}`)
       .setDescription(message)
       .setTimestamp();
   }
