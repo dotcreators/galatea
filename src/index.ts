@@ -9,5 +9,4 @@ logger('Service started.');
 
 // Start cron services
 // cronFetchArtistSuggestion();
-// cronUpdateStats();
-UpdateArtists();
+cronUpdateStats();
