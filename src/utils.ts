@@ -1,6 +1,6 @@
 export function logger(text: string) {
   console.log(
-    `[${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}] ${text}`
+    `[${new Date().toLocaleDateString('en-EN')} ${new Date().toLocaleTimeString()}] ${text}`
   );
 }
 

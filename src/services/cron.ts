@@ -10,21 +10,38 @@ import { Artist } from './database/drizzle/schema/artists';
 const EVERY_HOURS = 24;
 const FETCH_TIMEOUT = 3000;
 
-export function cronUpdateStats() {
-  cron.schedule(`0 0 */${EVERY_HOURS} * * *`, async () => UpdateArtists(), {
-    name: 'Update followers and tweets count for artists (pfp/banner/bio and etc).',
-    runOnInit: envConfig.RUN_ON_START,
-  });
+function startCronUpdateStats() {
+  cron.schedule(
+    `0 0 */${EVERY_HOURS} * * *`,
+    async () => updateArtistsInformation(),
+    {
+      name: 'Update followers and tweets count for artists (pfp/banner/bio and etc).',
+      runOnInit: envConfig.RUN_ON_START,
+    }
+  );
 }
 
-export function cronFetchArtistSuggestion() {
-  cron.schedule(`0 0 */${EVERY_HOURS} * * *`, async () => {}, {
-    name: 'Fetching suggested artists profiles.',
-    runOnInit: envConfig.RUN_ON_START,
-  });
+function startCronFetchArtistSuggestion() {
+  cron.schedule(
+    `0 0 */${EVERY_HOURS} * * *`,
+    async () => {
+      throw new Error('Not implemented');
+    },
+    {
+      name: 'Fetching suggested artists profiles.',
+      runOnInit: envConfig.RUN_ON_START,
+    }
+  );
 }
 
-export async function UpdateArtists() {
+/**
+ * Updates artists information by fetching profiles from dotcreators-sun and Twitter,
+ * then updating the information in the database.
+ *
+ * @async
+ * @function updateArtistsInformation
+ */
+async function updateArtistsInformation(): Promise<void> {
   logger('Starting fetching artist profiles from dotcreatros-sun...');
 
   try {
@@ -40,6 +57,11 @@ export async function UpdateArtists() {
 
     logger(`Recieved ${artistProfiles.length} artist profiles`);
     logger(`Starting recieving artist profiles from twitter...`);
+    sendDiscordMessage(
+      'Updating artists information',
+      `Recieved ${artistProfiles.length} artist profiles\nStarting update data...`,
+      'info'
+    );
 
     const reqList = artistProfiles.map(
       (artist, index) =>
@@ -163,3 +185,5 @@ export async function UpdateArtists() {
     );
   }
 }
+
+export { startCronUpdateStats, startCronFetchArtistSuggestion };
