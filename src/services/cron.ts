@@ -9,7 +9,6 @@ import { Artist } from './database/drizzle/schema/artists';
 
 const EVERY_HOURS = 24;
 const FETCH_TIMEOUT = 3000;
-const s: boolean = envConfig.RUN_ON_START ? true : false;
 
 function startCronUpdateStats() {
   cron.schedule(
@@ -17,7 +16,7 @@ function startCronUpdateStats() {
     async () => updateArtistsInformation(),
     {
       name: 'Update followers and tweets count for artists (pfp/banner/bio and etc).',
-      runOnInit: s,
+      runOnInit: envConfig.RUN_ON_START,
     }
   );
 }
@@ -30,7 +29,7 @@ function startCronFetchArtistSuggestion() {
     },
     {
       name: 'Fetching suggested artists profiles.',
-      runOnInit: s,
+      runOnInit: envConfig.RUN_ON_START,
     }
   );
 }
