@@ -18,7 +18,7 @@ export function sendDiscordMessage(
       .setTimestamp();
   } else if (severity === 'info') {
     embed = new MessageBuilder()
-      .setColor('#FF902B')
+      .setColor('#7ffa45')
       .setTitle(`galatea - ${title.toLocaleLowerCase()}`)
       .setDescription(message)
       .setTimestamp();

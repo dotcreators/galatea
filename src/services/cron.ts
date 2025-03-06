@@ -60,7 +60,7 @@ async function updateArtistsInformation(): Promise<void> {
     logger(`Starting recieving artist profiles from twitter...`);
     sendDiscordMessage(
       'Updating artists information',
-      `Recieved ${artistProfiles.length} artist profiles\nStarting update data...`,
+      `Recieved ${artistProfiles.length} artist profiles, updating`,
       'info'
     );
 
@@ -127,7 +127,7 @@ async function updateArtistsInformation(): Promise<void> {
     );
     sendDiscordMessage(
       'Updating artists information',
-      `Successfully updated ${updatedArtistsProfilesResponse.items.length} artist profiles and ${updatedArtistsTrendsResponse.items.length} trends`,
+      `Successfully updated:\nTotal updated artists: ${'```' + updatedArtistsProfilesResponse.items.length + '```'}`,
       'info'
     );
 
