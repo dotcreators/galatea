@@ -16,7 +16,7 @@ function startCronUpdateStats() {
     async () => updateArtistsInformation(),
     {
       name: 'Update followers and tweets count for artists (pfp/banner/bio and etc).',
-      runOnInit: envConfig.RUN_ON_START,
+      runOnInit: envConfig.RUN_ON_START as boolean,
     }
   );
 }
@@ -29,7 +29,7 @@ function startCronFetchArtistSuggestion() {
     },
     {
       name: 'Fetching suggested artists profiles.',
-      runOnInit: envConfig.RUN_ON_START,
+      runOnInit: envConfig.RUN_ON_START as boolean,
     }
   );
 }
