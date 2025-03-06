@@ -115,11 +115,9 @@ async function updateArtistsInformation(): Promise<void> {
     const updatedArtistsTrendsResponse =
       await drizzleClient.updateTrendsInformationBulk(
         updatedArtistsProfiles.map(artist => ({
-          id: artist.id,
           twitterUserId: artist.twitterUserId,
           followersCount: artist.followersCount,
           tweetsCount: artist.tweetsCount,
-          createdAt: new Date(),
         }))
       );
 

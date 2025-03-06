@@ -60,14 +60,19 @@ export default class DrizzleClient implements IDatabaseClient {
   }
 
   async updateTrendsInformationBulk(
-    trendData: ArtistTrend[]
+    trendData: Omit<ArtistTrend, 'id' | 'createdAt'>[]
   ): Promise<Response<ArtistTrend[]>> {
     if (!this.client) throw Error('Client is not initialized');
 
     const promises = trendData.map(trend => {
       return this.client
         .insert(artistsTrends)
-        .values({ ...trend })
+        .values({
+          followersCount: trend.followersCount,
+          tweetsCount: trend.tweetsCount,
+          twitterUserId: trend.twitterUserId,
+          createdAt: new Date(),
+        })
         .returning()
         .execute();
     });
@@ -82,7 +87,7 @@ export default class DrizzleClient implements IDatabaseClient {
         } else {
           errorResults.push({
             reason: result.reason,
-            description: trendData[index]!.id,
+            description: trendData[index]!.twitterUserId,
           });
           return null;
         }
