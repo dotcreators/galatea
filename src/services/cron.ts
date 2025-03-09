@@ -59,7 +59,7 @@ async function updateArtistsInformation(): Promise<void> {
     logger(`Starting recieving artist profiles from twitter...`);
     sendDiscordMessage(
       'Updating artists information',
-      `Recieved ${artistProfiles.length} artist profiles, updating`,
+      `Recieved ${'`'}${artistProfiles.length}${'`'} artist profiles, updating`,
       'info'
     );
 
@@ -83,7 +83,7 @@ async function updateArtistsInformation(): Promise<void> {
     )) as ParsedProfile[];
 
     if (artistsInformation.length === 0) {
-      logger('Recieved 0 artists profiles from twitter');
+      logger('Recieved `0` artists profiles from twitter');
       return;
     }
 
@@ -126,7 +126,7 @@ async function updateArtistsInformation(): Promise<void> {
     );
     sendDiscordMessage(
       'Updating artists information',
-      `Successfully updated:\nTotal updated artists: ${'```' + updatedArtistsProfilesResponse.items.length + '```'}`,
+      `Successfully updated:\nTotal updated artists: ${'`' + updatedArtistsProfilesResponse.items.length + '`'}`,
       'info'
     );
 
