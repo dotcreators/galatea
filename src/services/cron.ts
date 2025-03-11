@@ -109,9 +109,6 @@ async function updateArtistsInformation(): Promise<void> {
       })
     );
 
-    const updatedArtistsProfilesResponse =
-      await drizzleClient.updateArtistInformationBulk(updatedArtistsProfiles);
-
     const updatedArtistsTrendsResponse =
       await drizzleClient.updateTrendsInformationBulk(
         updatedArtistsProfiles.map(artist => ({
@@ -121,6 +118,12 @@ async function updateArtistsInformation(): Promise<void> {
         }))
       );
 
+    const updatedArtistsProfilesResponse =
+      await drizzleClient.updateArtistInformationBulk(updatedArtistsProfiles);
+
+    const updatePercent =
+      await drizzleClient.updateArtistsFollowersTweetsPercent();
+
     logger(
       `Successfully updated artists ${updatedArtistsProfilesResponse.items.length} profiles and trends ${updatedArtistsTrendsResponse.items.length}`
     );
@@ -129,6 +132,21 @@ async function updateArtistsInformation(): Promise<void> {
       `Successfully updated:\nTotal updated artists: ${'`' + updatedArtistsProfilesResponse.items.length + '`'}`,
       'info'
     );
+
+    if (updatePercent.errors && updatePercent.errors.length > 0) {
+      logger(`Errors ${updatePercent.errors.length}:`);
+      logger(updatePercent.errors.map(error => error.description).join(', '));
+
+      if (updatePercent.errors.length > 0) {
+        updatePercent.errors.forEach(element => {
+          sendDiscordMessage(
+            'Error while updating artist percent change',
+            `${'```'}${element.reason}:\n${element.description}${'```'}`,
+            'error'
+          );
+        });
+      }
+    }
 
     if (
       updatedArtistsProfilesResponse.errors &&
