@@ -1,14 +1,5 @@
-import { InferModelFromColumns, InferSelectModel } from 'drizzle-orm';
-import {
-  integer,
-  pgTable,
-  real,
-  text,
-  timestamp,
-  uuid,
-  varchar,
-  customType,
-} from 'drizzle-orm/pg-core';
+import { InferSelectModel } from 'drizzle-orm';
+import { integer, pgTable, real, text, timestamp, uuid, varchar, customType, boolean } from 'drizzle-orm/pg-core';
 
 type Images = { avatar: string; banner?: string };
 
@@ -32,20 +23,16 @@ export const artists = pgTable('artists', {
   weeklyTweetsTrend: real('weekly_tweets_trend').notNull().default(0),
   weeklyFollowersTrend: real('weekly_followers_trend').notNull().default(0),
   images: typedJsonb<Images>('images').notNull(),
-  tags: text('tags').array().notNull().default(['pixelart']),
+  tags: text('tags').array().notNull(),
   url: text('url').notNull(),
   country: text('country'),
   website: text('website'),
   bio: text('bio'),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  joinedAt: timestamp('joined_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  isEnabled: boolean('is_enabled').notNull().default(true),
+  ranking: integer('ranking').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const artistsSuggestions = pgTable('artistsSuggestions', {
@@ -56,12 +43,8 @@ export const artistsSuggestions = pgTable('artistsSuggestions', {
   tags: text('tags').array().notNull().default(['pixelart']),
   status: varchar('status', { length: 255 }).notNull().default('requested'),
   requestedFrom: text('requested_from').notNull().default('suggestions'),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const artistsTrends = pgTable('artistsTrends', {
@@ -71,9 +54,7 @@ export const artistsTrends = pgTable('artistsTrends', {
     .notNull(),
   tweetsCount: integer('tweets_count').notNull(),
   followersCount: integer('followers_count').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type Artist = InferSelectModel<typeof artists>;

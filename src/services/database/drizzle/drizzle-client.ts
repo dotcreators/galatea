@@ -1,14 +1,8 @@
-import {
-  Artist,
-  artists,
-  artistsSuggestions,
-  artistsTrends,
-  ArtistTrend,
-} from './schema/artists';
+import { Artist, artists, artistsSuggestions, artistsTrends, ArtistTrend } from './schema/artists';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { drizzleConfig } from './drizzle.config';
 import { IDatabaseClient } from '../database-client.interface';
-import { eq, gte } from 'drizzle-orm';
+import { and, eq, gte, ne } from 'drizzle-orm';
 import { ErrorResponse, Response } from './models/response';
 
 export default class DrizzleClient implements IDatabaseClient {
@@ -24,12 +18,12 @@ export default class DrizzleClient implements IDatabaseClient {
   }
 
   async getArtistsProfiles(): Promise<Artist[]> {
-    return await this.client.query.artists.findMany();
+    return await this.client.query.artists.findMany({
+      where: ne(artists.isEnabled, false),
+    });
   }
 
-  async updateArtistInformationBulk(
-    artistsData: Artist[]
-  ): Promise<Response<Artist[]>> {
+  async updateArtistInformationBulk(artistsData: Artist[]): Promise<Response<Artist[]>> {
     const promises = artistsData.map(profile => {
       return this.client
         .update(artists)
@@ -104,7 +98,7 @@ export default class DrizzleClient implements IDatabaseClient {
     const trends = await this.client
       .select()
       .from(artistsTrends)
-      .where(gte(artistsTrends.createdAt, sevenDaysAgo))
+      .where(and(gte(artistsTrends.createdAt, sevenDaysAgo), ne(artists.isEnabled, false)))
       .execute();
 
     const trendsByArtist = trends.reduce(
@@ -118,36 +112,27 @@ export default class DrizzleClient implements IDatabaseClient {
       {} as Record<string, ArtistTrend[]>
     );
 
-    const updatePromises = Object.keys(trendsByArtist).map(
-      async twitterUserId => {
-        const artistTrends = trendsByArtist[twitterUserId];
-        const sortedTrends = artistTrends.sort(
-          (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
-        );
+    const updatePromises = Object.keys(trendsByArtist).map(async twitterUserId => {
+      const artistTrends = trendsByArtist[twitterUserId];
+      const sortedTrends = artistTrends.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
-        const oldestTrend = sortedTrends[0];
-        const latestTrend = sortedTrends[sortedTrends.length - 1];
+      const oldestTrend = sortedTrends[0];
+      const latestTrend = sortedTrends[sortedTrends.length - 1];
 
-        const followersChangePercent =
-          ((latestTrend.followersCount - oldestTrend.followersCount) /
-            oldestTrend.followersCount) *
-          100;
-        const tweetsChangePercent =
-          ((latestTrend.tweetsCount - oldestTrend.tweetsCount) /
-            oldestTrend.tweetsCount) *
-          100;
+      const followersChangePercent =
+        ((latestTrend.followersCount - oldestTrend.followersCount) / oldestTrend.followersCount) * 100;
+      const tweetsChangePercent = ((latestTrend.tweetsCount - oldestTrend.tweetsCount) / oldestTrend.tweetsCount) * 100;
 
-        return this.client
-          .update(artists)
-          .set({
-            weeklyFollowersTrend: followersChangePercent,
-            weeklyTweetsTrend: tweetsChangePercent,
-          })
-          .where(eq(artists.twitterUserId, twitterUserId))
-          .returning()
-          .execute();
-      }
-    );
+      return this.client
+        .update(artists)
+        .set({
+          weeklyFollowersTrend: followersChangePercent,
+          weeklyTweetsTrend: tweetsChangePercent,
+        })
+        .where(eq(artists.twitterUserId, twitterUserId))
+        .returning()
+        .execute();
+    });
 
     const updateResults = await Promise.allSettled(updatePromises);
 

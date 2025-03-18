@@ -1,9 +1,9 @@
 import cron from 'node-cron';
+import DrizzleClient from './database/drizzle/drizzle-client';
+import TwitterClient from './twitter/open-api/twitter-client';
 import { logger } from '../utils';
 import { sendDiscordMessage } from './discord-webhook';
 import { envConfig } from '../../env.config';
-import DrizzleClient from './database/drizzle/drizzle-client';
-import TwitterClient from './twitter/open-api/twitter-client';
 import { ParsedProfile } from './twitter/models/parsed-profile';
 import { Artist } from './database/drizzle/schema/artists';
 
@@ -16,7 +16,7 @@ function startCronUpdateStats() {
     async () => updateArtistsInformation(),
     {
       name: 'Update followers and tweets count for artists (pfp/banner/bio and etc).',
-      runOnInit: envConfig.RUN_ON_START,
+      runOnInit: true,
     }
   );
 }
