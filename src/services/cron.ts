@@ -11,14 +11,10 @@ const EVERY_HOURS = 24;
 const FETCH_TIMEOUT = 3000;
 
 function startCronUpdateStats() {
-  cron.schedule(
-    `0 0 */${EVERY_HOURS} * * *`,
-    async () => updateArtistsInformation(),
-    {
-      name: 'Update followers and tweets count for artists (pfp/banner/bio and etc).',
-      runOnInit: true,
-    }
-  );
+  cron.schedule(`0 0 */${EVERY_HOURS} * * *`, async () => updateArtistsInformation(), {
+    name: 'Update followers and tweets count for artists (pfp/banner/bio and etc).',
+    runOnInit: envConfig.RUN_ON_START,
+  });
 }
 
 function startCronFetchArtistSuggestion() {
@@ -67,20 +63,14 @@ async function updateArtistsInformation(): Promise<void> {
       (artist, index) =>
         new Promise(async resolve => {
           setTimeout(async () => {
-            const data = await twitterClient.getTwitterUserByUserId(
-              artist.twitterUserId
-            );
-            logger(
-              `[${index + 1} / ${artistProfiles.length}] Fetched profile for user ${artist.username}`
-            );
+            const data = await twitterClient.getTwitterUserByUserId(artist.twitterUserId);
+            logger(`[${index + 1} / ${artistProfiles.length}] Fetched profile for user ${artist.username}`);
             resolve(data);
           }, index * FETCH_TIMEOUT);
         })
     );
 
-    const artistsInformation: ParsedProfile[] = (await Promise.all(
-      reqList
-    )) as ParsedProfile[];
+    const artistsInformation: ParsedProfile[] = (await Promise.all(reqList)) as ParsedProfile[];
 
     if (artistsInformation.length === 0) {
       logger('Recieved `0` artists profiles from twitter');
@@ -90,39 +80,32 @@ async function updateArtistsInformation(): Promise<void> {
     logger('Fetched all profiles from twitter');
     logger('Starting updating artists information...');
 
-    const updatedArtistsProfiles: Artist[] = artistProfiles.map(
-      (artist, index) => ({
-        ...artist,
-        name: artistsInformation[index]?.displayName || artist.name,
-        username: artistsInformation[index]?.username || artist.username,
-        tweetsCount:
-          artistsInformation[index]?.tweetsCount || artist.tweetsCount,
-        followersCount:
-          artistsInformation[index]?.followersCount || artist.followersCount,
-        images: {
-          avatar: artistsInformation[index]?.avatarUrl || artist.images.avatar,
-          banner: artistsInformation[index]?.bannerUrl || artist.images.banner,
-        },
-        bio: artistsInformation[index]?.biography || artist.bio,
-        website: artistsInformation[index]?.website || artist.website,
-        updatedAt: new Date(),
-      })
+    const updatedArtistsProfiles: Artist[] = artistProfiles.map((artist, index) => ({
+      ...artist,
+      name: artistsInformation[index]?.displayName || artist.name,
+      username: artistsInformation[index]?.username || artist.username,
+      tweetsCount: artistsInformation[index]?.tweetsCount || artist.tweetsCount,
+      followersCount: artistsInformation[index]?.followersCount || artist.followersCount,
+      images: {
+        avatar: artistsInformation[index]?.avatarUrl || artist.images.avatar,
+        banner: artistsInformation[index]?.bannerUrl || artist.images.banner,
+      },
+      bio: artistsInformation[index]?.biography || artist.bio,
+      website: artistsInformation[index]?.website || artist.website,
+      updatedAt: new Date(),
+    }));
+
+    const updatedArtistsTrendsResponse = await drizzleClient.updateTrendsInformationBulk(
+      updatedArtistsProfiles.map(artist => ({
+        twitterUserId: artist.twitterUserId,
+        followersCount: artist.followersCount,
+        tweetsCount: artist.tweetsCount,
+      }))
     );
 
-    const updatedArtistsTrendsResponse =
-      await drizzleClient.updateTrendsInformationBulk(
-        updatedArtistsProfiles.map(artist => ({
-          twitterUserId: artist.twitterUserId,
-          followersCount: artist.followersCount,
-          tweetsCount: artist.tweetsCount,
-        }))
-      );
+    const updatedArtistsProfilesResponse = await drizzleClient.updateArtistInformationBulk(updatedArtistsProfiles);
 
-    const updatedArtistsProfilesResponse =
-      await drizzleClient.updateArtistInformationBulk(updatedArtistsProfiles);
-
-    const updatePercent =
-      await drizzleClient.updateArtistsFollowersTweetsPercent();
+    const updatePercent = await drizzleClient.updateArtistsFollowersTweetsPercent();
 
     logger(
       `Successfully updated artists ${updatedArtistsProfilesResponse.items.length} profiles and trends ${updatedArtistsTrendsResponse.items.length}`
@@ -148,16 +131,9 @@ async function updateArtistsInformation(): Promise<void> {
       }
     }
 
-    if (
-      updatedArtistsProfilesResponse.errors &&
-      updatedArtistsProfilesResponse.errors.length > 0
-    ) {
+    if (updatedArtistsProfilesResponse.errors && updatedArtistsProfilesResponse.errors.length > 0) {
       logger(`Errors ${updatedArtistsProfilesResponse.errors.length}:`);
-      logger(
-        updatedArtistsProfilesResponse.errors
-          .map(error => error.description)
-          .join(', ')
-      );
+      logger(updatedArtistsProfilesResponse.errors.map(error => error.description).join(', '));
 
       if (updatedArtistsProfilesResponse.errors.length > 0) {
         updatedArtistsProfilesResponse.errors.forEach(element => {
@@ -170,16 +146,9 @@ async function updateArtistsInformation(): Promise<void> {
       }
     }
 
-    if (
-      updatedArtistsTrendsResponse.errors &&
-      updatedArtistsTrendsResponse.errors.length > 0
-    ) {
+    if (updatedArtistsTrendsResponse.errors && updatedArtistsTrendsResponse.errors.length > 0) {
       logger(`Errors ${updatedArtistsTrendsResponse.errors.length}:`);
-      logger(
-        updatedArtistsTrendsResponse.errors
-          .map(error => error.description)
-          .join(', ')
-      );
+      logger(updatedArtistsTrendsResponse.errors.map(error => error.description).join(', '));
 
       updatedArtistsTrendsResponse.errors.forEach(element => {
         sendDiscordMessage(
