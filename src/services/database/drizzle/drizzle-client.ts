@@ -98,7 +98,7 @@ export default class DrizzleClient implements IDatabaseClient {
     const trends = await this.client
       .select()
       .from(artistsTrends)
-      .where(and(gte(artistsTrends.createdAt, sevenDaysAgo), ne(artists.isEnabled, false)))
+      .where(gte(artistsTrends.createdAt, sevenDaysAgo))
       .execute();
 
     const trendsByArtist = trends.reduce(
