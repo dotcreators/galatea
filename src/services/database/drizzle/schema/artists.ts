@@ -30,6 +30,8 @@ export const artists = pgTable('artists', {
   bio: text('bio'),
   isEnabled: boolean('is_enabled').notNull().default(true),
   ranking: integer('ranking').notNull().default(0),
+  previousRanking: integer('previous_ranking').notNull().default(0),
+  rankingChange: integer('ranking_change').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
