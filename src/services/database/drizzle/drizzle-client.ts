@@ -2,7 +2,7 @@ import { Artist, artists, artistsSuggestions, artistsTrends, ArtistTrend } from 
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { drizzleConfig } from './drizzle.config';
 import { IDatabaseClient } from '../database-client.interface';
-import { and, eq, gte, ne } from 'drizzle-orm';
+import { and, eq, gt, gte, ne } from 'drizzle-orm';
 import { ErrorResponse, Response } from './models/response';
 
 export default class DrizzleClient implements IDatabaseClient {
@@ -17,10 +17,19 @@ export default class DrizzleClient implements IDatabaseClient {
     });
   }
 
-  async getArtistsProfiles(): Promise<Artist[]> {
-    return await this.client.query.artists.findMany({
-      where: ne(artists.isEnabled, false),
-    });
+  async getArtistsProfiles(twitterUserId?: string): Promise<Artist[]> {
+    if (twitterUserId) {
+      const r = await this.client.query.artists.findFirst({
+        where: and(ne(artists.isEnabled, false), eq(artists.twitterUserId, twitterUserId)),
+      });
+
+      if (!r) throw Error('Failed to fetch artist from database');
+      return [r];
+    } else {
+      return await this.client.query.artists.findMany({
+        where: ne(artists.isEnabled, false),
+      });
+    }
   }
 
   async updateArtistInformationBulk(artistsData: Artist[]): Promise<Response<Artist[]>> {
@@ -93,12 +102,13 @@ export default class DrizzleClient implements IDatabaseClient {
 
   async updateArtistsFollowersTweetsPercent(): Promise<Response<Artist[]>> {
     const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
 
     const trends = await this.client
       .select()
       .from(artistsTrends)
-      .where(gte(artistsTrends.createdAt, sevenDaysAgo))
+      .where(and(gte(artistsTrends.createdAt, sevenDaysAgo)))
       .execute();
 
     const trendsByArtist = trends.reduce(
