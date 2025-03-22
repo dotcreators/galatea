@@ -12,7 +12,7 @@ class DataGathering {
   private readonly FETCH_TIMEOUT = 3000;
 
   private calculateArtistsRanking(artists: Artist[]): Artist[] {
-    artists.sort((a, b) => b.weeklyFollowersTrend - a.weeklyFollowersTrend);
+    artists.sort((a, b) => b.followersCount - a.followersCount);
 
     artists.forEach((artist, index) => {
       const newRanking = index + 1;
