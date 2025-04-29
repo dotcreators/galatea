@@ -46,4 +46,15 @@ async function testTrendingCalculation() {
   }
 }
 
-export { testTrendingCalculation };
+async function testGetArtistProfile(twitterUserId: string) {
+  try {
+    console.log('try to fetch');
+    const a = await drizzleClient.getArtistsProfiles(twitterUserId);
+    const f = await twitterClient.getTwitterUserByUsername(a[0].username);
+    console.log(f);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+export { testTrendingCalculation, testGetArtistProfile };
