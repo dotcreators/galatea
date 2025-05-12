@@ -7,7 +7,7 @@ const EVERY_HOURS = 24;
 const dataGathering = new DataGathering();
 
 function startCronUpdateStats() {
-  cron.schedule(`0 0 */${EVERY_HOURS} * * *`, async () => dataGathering.updateArtistsInformationWithTrends(), {
+  cron.schedule(`0 0 */${EVERY_HOURS} * * *`, async () => dataGathering.updateArtistsData(), {
     name: 'Update followers and tweets count for artists (pfp/banner/bio and etc).',
     runOnInit: envConfig.RUN_ON_START,
   });
