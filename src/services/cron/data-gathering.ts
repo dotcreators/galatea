@@ -190,7 +190,7 @@ export class DataGathering {
 
       const ranked = this.calculateArtistsRanking(updated);
 
-      const [profileRes, trendsRes, percentRes] = await Promise.all([
+      const [profileRes, trendsRes] = await Promise.all([
         this.drizzleClient.updateArtistInformationBulk(ranked),
         this.drizzleClient.updateTrendsInformationBulk(
           ranked.map(a => ({
@@ -199,10 +199,11 @@ export class DataGathering {
             tweetsCount: a.tweetsCount,
           }))
         ),
-        this.drizzleClient.updateArtistsFollowersTweetsPercent(),
       ]);
 
       logger.info(`Updated profiles: ${profileRes.items.length}, trends: ${trendsRes.items.length}`);
+
+      const percentRes = await this.drizzleClient.updateArtistsFollowersTweetsPercent();
 
       sendDiscordMessage(
         'Updating artists data completed',
