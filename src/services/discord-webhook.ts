@@ -17,7 +17,7 @@ export function sendDiscordMessage(title: string, message: string, severity: Sev
 
   embed = new MessageBuilder()
     .setColor(getMessageColor(severity))
-    .setTitle(`galatea - ${title.toLocaleLowerCase()}`)
+    .setTitle(`galatea: ${title.toLocaleLowerCase()}`)
     .setDescription(message)
     .setTimestamp();
 

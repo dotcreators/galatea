@@ -1,7 +1,5 @@
 export function logger(text: string) {
-  console.log(
-    `[${new Date().toLocaleDateString('en-EN')} ${new Date().toLocaleTimeString()}] ${text}`
-  );
+  console.log(`[${new Date().toLocaleDateString('en-EN')} ${new Date().toLocaleTimeString()}] ${text}`);
 }
 
 export async function getOriginalUrl(shortenedUrl: string): Promise<string> {

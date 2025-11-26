@@ -1,6 +1,6 @@
 import { ITwitterClient } from '../twitter-client.interface';
 import { ParsedProfile } from '../models/parsed-profile';
-import { formatBio } from '../../../utils';
+import { formatBio } from '../../../utils/utils';
 import { Scraper } from '@the-convocation/twitter-scraper';
 
 const REQUEST_TIMEOUT = 5000;
@@ -16,9 +16,7 @@ export default class TwitterClient implements ITwitterClient {
     },
   });
 
-  async getTwitterUserByUsername(
-    username: string
-  ): Promise<ParsedProfile | { error: string }> {
+  async getTwitterUserByUsername(username: string): Promise<ParsedProfile | { error: string }> {
     const r = await this.api.getProfile(username);
 
     if (r) {
@@ -42,9 +40,7 @@ export default class TwitterClient implements ITwitterClient {
     }
   }
 
-  async getTwitterUserByUserId(
-    userId: string
-  ): Promise<ParsedProfile | { error: string }> {
+  async getTwitterUserByUserId(userId: string): Promise<ParsedProfile | { error: string }> {
     throw Error('Method not implemented');
   }
 }
