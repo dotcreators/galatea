@@ -14,8 +14,9 @@ export class DataGathering {
   private drizzleClient = new DrizzleClient();
   private twitterClient = new TwitterClient();
 
-  private readonly MAX_RETRIES = 3;
-  private readonly BASE_DELAY = 5000;
+  private readonly MAX_RETRIES = 10;
+  private readonly BASE_DELAY = 15000;
+  private readonly REQUEST_INTERVAL = 3000;
 
   private async sleep(ms: number) {
     return new Promise(res => setTimeout(res, ms));
@@ -69,22 +70,33 @@ export class DataGathering {
       return { success: true, data };
     } catch (err: any) {
       const message = err.message || String(err);
-      logger.warn(`Fetch failed for ${artist.username} (attempt ${attempt}): ${message}`);
+      logger.warn(`Fetch failed for ${artist.username} (attempt ${attempt}/${this.MAX_RETRIES}): ${message}`);
 
       if (attempt < this.MAX_RETRIES) {
-        const backoff = this.BASE_DELAY * attempt;
-        logger.info(`Retrying after ${backoff}ms...`);
-        await this.sleep(backoff);
+        const backoff = this.BASE_DELAY * Math.pow(1.5, attempt - 1);
+        const maxBackoff = 300000;
+        const finalBackoff = Math.min(backoff, maxBackoff);
+
+        logger.info(`Retrying after ${Math.round(finalBackoff / 1000)}s...`);
+        await this.sleep(finalBackoff);
         return this.fetchWithRetry(artist, attempt + 1);
       }
 
-      logger.error(`All attempts failed for ${artist.username}: ${message}`);
+      logger.error(`All ${this.MAX_RETRIES} attempts failed for ${artist.username}: ${message}`);
+
+      sendDiscordMessage(
+        'Failed to fetch artist after all retries',
+        `**${artist.username}** (${artist.name})\nError: \`${message}\`\nAttempts: ${this.MAX_RETRIES}`,
+        'error'
+      );
+
       return { success: false, artist, error: message, attempt };
     }
   }
 
   private async fetchAllArtists(artists: Artist[]): Promise<ParsedProfile[]> {
     const parsed: ParsedProfile[] = [];
+    const failed: Artist[] = [];
     const total = artists.length;
 
     for (let i = 0; i < artists.length; i++) {
@@ -94,14 +106,42 @@ export class DataGathering {
       logger.info(`[${current}/${total}] Fetching ${artist.username}`);
 
       if (i > 0) {
-        await this.sleep(1500);
+        await this.sleep(this.REQUEST_INTERVAL);
       }
 
       const result = await this.fetchWithRetry(artist);
 
       if (result.success) {
         parsed.push(result.data);
+        logger.info(`Successfully fetched ${artist.username} (${parsed.length}/${total})`);
+      } else {
+        failed.push(result.artist);
+        logger.error(`Failed to fetch ${artist.username} after all attempts`);
       }
+
+      if (current % 50 === 0) {
+        const successRate = Math.round((parsed.length / current) * 100);
+        sendDiscordMessage(
+          'Progress update',
+          `Processed ${current}/${total} artists\nSuccess rate: ${successRate}% (${parsed.length} successful, ${failed.length} failed)`,
+          'info'
+        );
+      }
+    }
+
+    const successRate = Math.round((parsed.length / total) * 100);
+    logger.info(`Fetch completed: ${parsed.length}/${total} successful (${successRate}%)`);
+
+    if (failed.length > 0) {
+      logger.warn(`Failed to fetch ${failed.length} artists: ${failed.map(a => a.username).join(', ')}`);
+      sendDiscordMessage(
+        'Fetch summary',
+        `**Final results:**\nSuccessful: ${parsed.length}\nFailed: ${failed.length}\nSuccess rate: ${successRate}%\n\nFailed users: ${failed
+          .slice(0, 10)
+          .map(a => a.username)
+          .join(', ')}${failed.length > 10 ? '...' : ''}`,
+        failed.length > total * 0.1 ? 'error' : 'warning'
+      );
     }
 
     return parsed;
@@ -117,12 +157,16 @@ export class DataGathering {
       }
 
       logger.info(`Received ${artists.length} artist profiles`);
-      sendDiscordMessage('Updating artists data', `Fetching \`${artists.length}\` artists`, 'warning');
+      sendDiscordMessage('Updating artists data', `Starting to fetch \`${artists.length}\` artists`, 'warning');
 
       const parsedArtists = await this.fetchAllArtists(artists);
       logger.info(`Fetched ${parsedArtists.length} profiles`);
 
-      if (!parsedArtists.length) return;
+      if (!parsedArtists.length) {
+        logger.error('No artists were successfully fetched!');
+        sendDiscordMessage('Critical error', 'Failed to fetch ANY artist profiles!', 'error');
+        return;
+      }
 
       const updated = artists.map(artist => {
         const parsed = parsedArtists.find(p => p.userId === artist.twitterUserId);
@@ -161,8 +205,8 @@ export class DataGathering {
       logger.info(`Updated profiles: ${profileRes.items.length}, trends: ${trendsRes.items.length}`);
 
       sendDiscordMessage(
-        'Updating artists data',
-        `Updated \`${profileRes.items.length}\` artists + \`${trendsRes.items.length}\` trends`,
+        'Updating artists data completed',
+        `**Successfully updated:**\nProfiles: \`${profileRes.items.length}\`\nTrends: \`${trendsRes.items.length}\`\nFetch rate: \`${Math.round((parsedArtists.length / artists.length) * 100)}%\``,
         'info'
       );
 
