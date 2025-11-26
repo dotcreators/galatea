@@ -10,38 +10,12 @@ type FetchResult =
   | { success: true; data: ParsedProfile }
   | { success: false; artist: Artist; error: string; attempt: number };
 
-class RateLimiter {
-  private timestamps: number[] = [];
-  constructor(
-    private limit: number,
-    private intervalMs: number
-  ) {}
-
-  async schedule<T>(fn: () => Promise<T>): Promise<T> {
-    const now = Date.now();
-    this.timestamps = this.timestamps.filter(t => now - t < this.intervalMs);
-
-    if (this.timestamps.length >= this.limit) {
-      const waitTime = this.timestamps[0] + this.intervalMs - now + 100;
-      logger.warn(`Rate limit reached (${this.limit} requests/${this.intervalMs / 1000}s). Waiting ${waitTime}ms...`);
-      await new Promise(res => setTimeout(res, waitTime));
-
-      return this.schedule(fn);
-    }
-
-    this.timestamps.push(now);
-    return fn();
-  }
-}
-
 export class DataGathering {
   private drizzleClient = new DrizzleClient();
   private twitterClient = new TwitterClient();
 
-  private readonly FETCH_CONCURRENCY = 5;
-  private readonly MAX_RETRIES = 5;
-  private readonly BASE_DELAY = 10000;
-  private readonly RATE_LIMITER = new RateLimiter(30, 60_000);
+  private readonly MAX_RETRIES = 3;
+  private readonly BASE_DELAY = 5000;
 
   private async sleep(ms: number) {
     return new Promise(res => setTimeout(res, ms));
@@ -74,11 +48,23 @@ export class DataGathering {
 
   private async fetchWithRetry(artist: Artist, attempt = 1): Promise<FetchResult> {
     try {
-      const data = await this.RATE_LIMITER.schedule(() =>
-        this.twitterClient.getTwitterUserByUserId(artist.twitterUserId)
-      );
+      const usernameResult = await this.twitterClient.getTwitterUserByUsername(artist.username);
+      if ('error' in usernameResult) {
+        throw new Error(typeof usernameResult.error === 'string' ? usernameResult.error : 'Unknown error from API');
+      }
+      const data = usernameResult;
 
-      if ('error' in data) throw new Error(data.error);
+      if (data.userId !== artist.twitterUserId) {
+        logger.warn(
+          `UserId mismatch for ${artist.username}: expected ${artist.twitterUserId}, got ${data.userId}. User might have been suspended/deleted and username taken by someone else.`
+        );
+        sendDiscordMessage(
+          'UserId mismatch detected!',
+          `Username **${artist.username}** now belongs to different user.\nExpected: \`${artist.twitterUserId}\`\nGot: \`${data.userId}\` (${data.displayName})`,
+          'warning'
+        );
+      }
+
       logger.debug(`Fetched profile for ${artist.username}`);
       return { success: true, data };
     } catch (err: any) {
@@ -86,7 +72,7 @@ export class DataGathering {
       logger.warn(`Fetch failed for ${artist.username} (attempt ${attempt}): ${message}`);
 
       if (attempt < this.MAX_RETRIES) {
-        const backoff = this.BASE_DELAY * Math.pow(2, attempt - 1);
+        const backoff = this.BASE_DELAY * attempt;
         logger.info(`Retrying after ${backoff}ms...`);
         await this.sleep(backoff);
         return this.fetchWithRetry(artist, attempt + 1);
@@ -100,21 +86,24 @@ export class DataGathering {
   private async fetchAllArtists(artists: Artist[]): Promise<ParsedProfile[]> {
     const parsed: ParsedProfile[] = [];
     const total = artists.length;
-    const q = [...artists];
-    let processed = 0;
 
-    const workers = Array.from({ length: this.FETCH_CONCURRENCY }, async (_, i) => {
-      const worker = `W${i + 1}`;
-      while (q.length > 0) {
-        const artist = q.shift()!;
-        const current = ++processed;
-        logger.info(`[${worker}] [${current}/${total}] Fetching ${artist.username}`);
-        const res = await this.fetchWithRetry(artist);
-        if (res.success) parsed.push(res.data);
+    for (let i = 0; i < artists.length; i++) {
+      const artist = artists[i];
+      const current = i + 1;
+
+      logger.info(`[${current}/${total}] Fetching ${artist.username}`);
+
+      if (i > 0) {
+        await this.sleep(1500);
       }
-    });
 
-    await Promise.all(workers);
+      const result = await this.fetchWithRetry(artist);
+
+      if (result.success) {
+        parsed.push(result.data);
+      }
+    }
+
     return parsed;
   }
 
