@@ -1,11 +1,7 @@
-import {
-  cronFetchArtistSuggestion,
-  cronUpdateStats,
-} from './services/cronService';
-import { logger } from './utils';
+import { testGetArtistProfile } from 'tests';
+import { startCronUpdateStats } from './services/cron';
+import { logger } from './utils/utils';
 
 logger('Service started.');
-
-// Start cron services
-cronFetchArtistSuggestion();
-cronUpdateStats();
+startCronUpdateStats();
+// testGetArtistProfile('1349150508125192192');
