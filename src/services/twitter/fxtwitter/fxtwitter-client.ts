@@ -1,4 +1,5 @@
 import { FetchProfileResult } from '../models/fetch-profile-result';
+import { formatBio } from '../../../utils/utils';
 
 type FxTwitterUser = {
   id: string;
@@ -43,7 +44,7 @@ export default class FxTwitterClient {
             url: `https://x.com/${user.screen_name}`,
             avatarUrl: user.avatar_url?.replace('_normal', ''),
             bannerUrl: user.banner_url,
-            biography: user.description,
+            biography: await formatBio(user.description ?? ''),
             website: user.website?.url || undefined,
             createdAt: user.joined ? new Date(user.joined).toISOString() : new Date().toISOString(),
           },
