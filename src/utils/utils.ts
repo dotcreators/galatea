@@ -7,6 +7,7 @@ export async function getOriginalUrl(shortenedUrl: string): Promise<string> {
     const response = await fetch(shortenedUrl, {
       method: 'HEAD',
       redirect: 'manual',
+      signal: AbortSignal.timeout(10000),
     });
 
     if (response.headers && response.headers.get('location')) {

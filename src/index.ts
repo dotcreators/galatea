@@ -4,4 +4,4 @@ import { logger } from './utils/utils';
 
 logger('Service started.');
 startCronUpdateStats();
-// testGetArtistProfile('1349150508125192192');
+testGetArtistProfile('cyangmou');

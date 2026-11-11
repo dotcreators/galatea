@@ -1,10 +1,6 @@
-import { ParsedProfile } from './models/parsed-profile';
+import { FetchProfileResult } from './models/fetch-profile-result';
 
 export interface ITwitterClient {
-  getTwitterUserByUsername(
-    username: string
-  ): Promise<ParsedProfile | { error: string }>;
-  getTwitterUserByUserId(
-    userId: string
-  ): Promise<ParsedProfile | { error: string }>;
+  getTwitterUserByUsername(username: string): Promise<FetchProfileResult>;
+  getTwitterUserByUserId(userId: string): Promise<FetchProfileResult>;
 }

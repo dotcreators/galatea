@@ -11,9 +11,10 @@ async function testTrendingCalculation() {
     const a = await drizzleClient.getArtistsProfiles('1287977244023914496');
     const artist: Artist = a[0];
 
-    const parsedArtist = (await twitterClient.getTwitterUserByUserId(artist.twitterUserId)) as ParsedProfile;
+    const result = await twitterClient.getTwitterUserByUserId(artist.twitterUserId);
 
-    if (!parsedArtist) throw Error('Unable to fetch artist profile');
+    if (result.status !== 'ok') throw Error('Unable to fetch artist profile');
+    const parsedArtist: ParsedProfile = result.profile;
 
     const updatedArtist: Artist = {
       ...artist,
@@ -46,11 +47,11 @@ async function testTrendingCalculation() {
   }
 }
 
-async function testGetArtistProfile(twitterUserId: string) {
+async function testGetArtistProfile(twitterUsername: string) {
   try {
     console.log('try to fetch');
-    const a = await drizzleClient.getArtistsProfiles(twitterUserId);
-    const f = await twitterClient.getTwitterUserByUsername(a[0].username);
+    // const a = await drizzleClient.getArtistsProfiles(twitterUserId);
+    const f = await twitterClient.getTwitterUserByUsername(twitterUsername);
     console.log(f);
   } catch (e) {
     console.error(e);

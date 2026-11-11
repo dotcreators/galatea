@@ -5,6 +5,11 @@ import { IDatabaseClient } from '../database-client.interface';
 import { and, eq, gt, gte, ne } from 'drizzle-orm';
 import { ErrorResponse, Response } from './models/response';
 
+const getChangePercent = (oldest: number, latest: number): number => {
+  if (oldest <= 0) return 0;
+  return ((latest - oldest) / oldest) * 100;
+};
+
 export default class DrizzleClient implements IDatabaseClient {
   private client;
 
@@ -129,9 +134,8 @@ export default class DrizzleClient implements IDatabaseClient {
       const oldestTrend = sortedTrends[0];
       const latestTrend = sortedTrends[sortedTrends.length - 1];
 
-      const followersChangePercent =
-        ((latestTrend.followersCount - oldestTrend.followersCount) / oldestTrend.followersCount) * 100;
-      const tweetsChangePercent = ((latestTrend.tweetsCount - oldestTrend.tweetsCount) / oldestTrend.tweetsCount) * 100;
+      const followersChangePercent = getChangePercent(oldestTrend.followersCount, latestTrend.followersCount);
+      const tweetsChangePercent = getChangePercent(oldestTrend.tweetsCount, latestTrend.tweetsCount);
 
       return this.client
         .update(artists)

@@ -1,11 +1,10 @@
-import { ITwitterClient } from '../twitter-client.interface';
 import { ParsedProfile } from '../models/parsed-profile';
 import { formatBio } from '../../../utils/utils';
 import { Scraper } from '@the-convocation/twitter-scraper';
 
 const REQUEST_TIMEOUT = 5000;
 
-export default class TwitterClient implements ITwitterClient {
+export default class TwitterClient {
   private readonly api = new Scraper({
     transform: {
       request(input: RequestInfo | URL, init: RequestInit = {}) {
