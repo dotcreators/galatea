@@ -1,7 +1,5 @@
 export function logger(text: string) {
-  console.log(
-    `[${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}] ${text}`
-  );
+  console.log(`[${new Date().toLocaleDateString('en-EN')} ${new Date().toLocaleTimeString()}] ${text}`);
 }
 
 export async function getOriginalUrl(shortenedUrl: string): Promise<string> {
@@ -9,6 +7,7 @@ export async function getOriginalUrl(shortenedUrl: string): Promise<string> {
     const response = await fetch(shortenedUrl, {
       method: 'HEAD',
       redirect: 'manual',
+      signal: AbortSignal.timeout(10000),
     });
 
     if (response.headers && response.headers.get('location')) {
