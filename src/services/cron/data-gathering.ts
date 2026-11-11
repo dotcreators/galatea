@@ -162,7 +162,7 @@ export class DataGathering {
       logger.info(`Received ${artists.length} artist profiles`);
       sendDiscordMessage('Updating artists data', `Starting to fetch \`${artists.length}\` artists`, 'warning');
 
-      const { fetched } = await this.fetchAllArtists(artists);
+      const { fetched, suspended, notFound } = await this.fetchAllArtists(artists);
       logger.info(`Fetched ${fetched.size} profiles`);
 
       if (!fetched.size) {
@@ -171,12 +171,20 @@ export class DataGathering {
         return;
       }
 
+      const suspendedIds = new Set(suspended.map(a => a.twitterUserId));
+      const notFoundIds = new Set(notFound.map(a => a.twitterUserId));
+
       const updated = artists.map(artist => {
         const parsed = fetched.get(artist.twitterUserId);
-        if (!parsed) return artist;
+        if (!parsed) {
+          if (suspendedIds.has(artist.twitterUserId)) return { ...artist, trackingStatus: 'suspended' };
+          if (notFoundIds.has(artist.twitterUserId)) return { ...artist, trackingStatus: 'not_found' };
+          return artist;
+        }
 
         return {
           ...artist,
+          trackingStatus: 'active',
           name: parsed.displayName || artist.name,
           username: parsed.username || artist.username,
           url: parsed.url || artist.url,

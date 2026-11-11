@@ -29,6 +29,7 @@ export const artists = pgTable('artists', {
   website: text('website'),
   bio: text('bio'),
   isEnabled: boolean('is_enabled').notNull().default(true),
+  trackingStatus: varchar('tracking_status', { length: 32 }).notNull().default('active'),
   ranking: integer('ranking').notNull().default(0),
   previousRanking: integer('previous_ranking').notNull().default(0),
   rankingChange: integer('ranking_change').notNull().default(0),
