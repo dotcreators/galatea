@@ -13,6 +13,8 @@ export type ArtistFetchResult =
 type ArtistIdentity = { twitterUserId: string; username: string };
 
 const ID_LOOKUP_FAILURE_LIMIT = 5;
+const FXTWITTER_CONFIRM_ATTEMPTS = 4;
+const FXTWITTER_CONFIRM_DELAY = 10000;
 
 export default class ProfileFetcher {
   private readonly twitterClient = new TwitterClient();
@@ -46,7 +48,7 @@ export default class ProfileFetcher {
     const byUsername = this.matchArtist(artist, await this.twitterClient.getTwitterUserByUsername(artist.username));
     if (byUsername.status === 'ok') return { ...byUsername, source: 'username' };
 
-    const byFxTwitter = this.matchArtist(artist, await this.fxTwitterClient.getTwitterUserByUsername(artist.username));
+    const byFxTwitter = await this.fetchFromFxTwitter(artist);
     if (byFxTwitter.status === 'ok') return { ...byFxTwitter, source: 'fxtwitter' };
 
     if (byFxTwitter.status === 'suspended') return { status: 'suspended' };
@@ -58,6 +60,18 @@ export default class ProfileFetcher {
         .map(result => (result.status === 'error' ? result.message : result.status))
         .join('; '),
     };
+  }
+
+  private async fetchFromFxTwitter(artist: ArtistIdentity): Promise<FetchProfileResult> {
+    let result = await this.fxTwitterClient.getTwitterUserByUsername(artist.username);
+
+    for (let attempt = 1; attempt < FXTWITTER_CONFIRM_ATTEMPTS; attempt++) {
+      if (result.status !== 'not_found' && result.status !== 'suspended') break;
+      await new Promise(res => setTimeout(res, FXTWITTER_CONFIRM_DELAY));
+      result = await this.fxTwitterClient.getTwitterUserByUsername(artist.username);
+    }
+
+    return this.matchArtist(artist, result);
   }
 
   private matchArtist(artist: ArtistIdentity, result: FetchProfileResult): FetchProfileResult {
